@@ -1,0 +1,3 @@
+pip install pygame
+princess_blackman_game.py
+python princess_blackman_game.py
