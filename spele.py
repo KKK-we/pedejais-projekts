@@ -8,172 +8,316 @@ root.resizable(False, False)
 canvas = tk.Canvas(root, width=1366, height=768, bg="#2d2d1a")
 canvas.pack()
 
-# =====================
+# =========================
 # PLATFORMAS
-# =====================
-platforms = [
+# =========================
+platform_data = [
+    # Zeme
     (0, 700, 1366, 768),
-    (0, 150, 300, 200),
-    (200, 200, 800, 250),
-    (850, 180, 1200, 230),
-    (150, 450, 850, 500),
-    (900, 450, 1200, 500),
-    (250, 600, 700, 650),
-    (850, 620, 1300, 670),
-    (1050, 300, 1200, 350),
-    (500, 400, 600, 430),
+
+    # Kreisā puse
+    (0, 580, 180, 620),
+    (220, 520, 420, 560),
+    (470, 450, 650, 490),
+
+    # Vidus
+    (700, 600, 950, 640),
+    (850, 500, 1050, 540),
+    (600, 380, 800, 420),
+    (350, 320, 550, 360),
+
+    # Augšējā daļa
+    (150, 220, 350, 260),
+    (450, 180, 650, 220),
+    (800, 180, 1000, 220),
+    (1100, 250, 1280, 290),
+
+    # Labā puse ceļā uz finišu
+    (1050, 420, 1200, 460),
+    (1180, 340, 1320, 380),
+    (1080, 140, 1220, 180),
 ]
 
-platform_rects = []
-for p in platforms:
-    platform_rects.append(
-        canvas.create_rectangle(p, fill="#8c7b4f", outline="black")
+platforms = []
+
+for p in platform_data:
+    rect = canvas.create_rectangle(
+        p[0], p[1], p[2], p[3],
+        fill="#8c7b4f",
+        outline="black",
+        width=2
     )
+    platforms.append(rect)
 
-# =====================
+# =========================
 # ŪDENS
-# =====================
+# =========================
 water_areas = [
-    canvas.create_rectangle(250, 230, 350, 250, fill="deepskyblue"),
-    canvas.create_rectangle(450, 480, 650, 500, fill="deepskyblue"),
+   canvas.create_rectangle(180, 680, 320, 700, fill="deepskyblue", outline="blue"),
+    canvas.create_rectangle(520, 680, 700, 700, fill="deepskyblue", outline="blue"),
+    canvas.create_rectangle(980, 680, 1150, 700, fill="deepskyblue", outline="blue"),
+    canvas.create_rectangle(730, 620, 850, 640, fill="deepskyblue", outline="blue"),
 ]
 
-# =====================
+# =========================
 # FINIŠS
-# =====================
-finish = canvas.create_rectangle(1220, 100, 1300, 180, fill="gold")
+# =========================
+finish = canvas.create_rectangle(
+    1220, 100, 1300, 180,
+    fill="gold",
+    outline="yellow",
+    width=3
+)
 
-# =====================
+# =========================
 # SPĒLĒTĀJS
-# =====================
-player = canvas.create_rectangle(50, 640, 90, 690, fill="black")
+# =========================
+player = canvas.create_rectangle(
+    50, 640, 90, 690,
+    fill="black"
+)
 
-# =====================
-# PRINCESE (BLAKUS SPĒLĒTĀJAM)
-# =====================
-princess = canvas.create_rectangle(120, 640, 160, 690, fill="pink")
+# =========================
+# PRINCESE
+# =========================
+princess = canvas.create_rectangle(
+    120, 640, 160, 690,
+    fill="pink"
+)
 
-# =====================
-# FIZIKA
-# =====================
+# =========================
+# SPĒLĒTĀJA FIZIKA
+# =========================
 player_speed = 7
-jump_strength = -18
-gravity = 0.9
-velocity_y = 0
-on_ground = False
-
-# princeses fizika
-princess_vy = 0
-princess_gravity = 0.9
-princess_jump = -16
-princess_on_ground = False
-
+slow_speed = 3
+player_jump = -18
+gravity = 1
+player_velocity_y = 0
+player_on_ground = False
 slow_timer = 0
 
-# =====================
-# POGAS
-# =====================
-keys = {"Left": False, "Right": False, "space": False, "w": False}
+# =========================
+# PRINCESES FIZIKA
+# =========================
+princess_speed = 2
+princess_jump = -16
+princess_velocity_y = 0
+princess_on_ground = False
 
-def key_press(e):
-    if e.keysym in keys:
-        keys[e.keysym] = True
+# =========================
+# TAUSTIŅI
+# =========================
+left_pressed = False
+right_pressed = False
+space_pressed = False
 
-def key_release(e):
-    if e.keysym in keys:
-        keys[e.keysym] = False
+def key_press(event):
+    global left_pressed, right_pressed, space_pressed
+
+    if event.keysym == "Left":
+        left_pressed = True
+
+    if event.keysym == "Right":
+        right_pressed = True
+
+    if event.keysym == "space":
+        space_pressed = True
+
+def key_release(event):
+    global left_pressed, right_pressed, space_pressed
+
+    if event.keysym == "Left":
+        left_pressed = False
+
+    if event.keysym == "Right":
+        right_pressed = False
+
+    if event.keysym == "space":
+        space_pressed = False
 
 root.bind("<KeyPress>", key_press)
 root.bind("<KeyRelease>", key_release)
 
-# =====================
-# SADURSMES
-# =====================
-def collide(a, b):
-    x1, y1, x2, y2 = canvas.coords(a)
-    a1, b1, a2, b2 = canvas.coords(b)
+# =========================
+# SADURSMJU FUNKCIJA
+# =========================
+def check_collision(obj1, obj2):
+    x1, y1, x2, y2 = canvas.coords(obj1)
+    a1, b1, a2, b2 = canvas.coords(obj2)
+
     return x1 < a2 and x2 > a1 and y1 < b2 and y2 > b1
 
-# =====================
+# =========================
 # SPĒLES CIKLS
-# =====================
+# =========================
 def game_loop():
-    global velocity_y, on_ground
-    global princess_vy, princess_on_ground, slow_timer
+    global player_velocity_y
+    global player_on_ground
+    global slow_timer
+    global princess_velocity_y
+    global princess_on_ground
 
-    speed = 3 if slow_timer > 0 else player_speed
+    current_speed = slow_speed if slow_timer > 0 else player_speed
 
-    # =====================
-    # SPĒLĒTĀJS
-    # =====================
-    if keys["Left"]:
-        canvas.move(player, -speed, 0)
+    # =========================
+    # SPĒLĒTĀJA KUSTĪBA
+    # =========================
+    if left_pressed:
+        canvas.move(player, -current_speed, 0)
 
-    if keys["Right"]:
-        canvas.move(player, speed, 0)
+    if right_pressed:
+        canvas.move(player, current_speed, 0)
 
-    if keys["space"] and on_ground:
-        velocity_y = jump_strength
-        on_ground = False
+    if space_pressed and player_on_ground:
+        player_velocity_y = player_jump
+        player_on_ground = False
 
-    velocity_y += gravity
-    canvas.move(player, 0, velocity_y)
+    player_velocity_y += gravity
+    canvas.move(player, 0, player_velocity_y)
 
-    px1, py1, px2, py2 = canvas.coords(player)
-    on_ground = False
+    player_x1, player_y1, player_x2, player_y2 = canvas.coords(player)
 
-    for p in platform_rects:
-        if collide(player, p):
-            x1, y1, x2, y2 = canvas.coords(p)
-            if velocity_y >= 0:
-                canvas.coords(player, px1, y1 - 50, px2, y1)
-                velocity_y = 0
-                on_ground = True
+    # Robežas spēlētājam
+    if player_x1 < 0:
+        canvas.move(player, -player_x1, 0)
 
-    # ūdens
-    for w in water_areas:
-        if collide(player, w):
+    if player_x2 > 1366:
+        canvas.move(player, 1366 - player_x2, 0)
+
+    player_on_ground = False
+
+    for platform in platforms:
+        plat_x1, plat_y1, plat_x2, plat_y2 = canvas.coords(platform)
+
+        if check_collision(player, platform):
+            player_x1, player_y1, player_x2, player_y2 = canvas.coords(player)
+
+            if player_velocity_y > 0 and player_y2 > plat_y1 and player_y1 < plat_y1:
+                canvas.coords(
+                    player,
+                    player_x1,
+                    plat_y1 - 50,
+                    player_x2,
+                    plat_y1
+                )
+                player_velocity_y = 0
+                player_on_ground = True
+
+    # Ja nokrīt zem mapes
+    if player_y2 > 768:
+        canvas.coords(player, 50, 640, 90, 690)
+        player_velocity_y = 0
+
+    # Ūdens palēnina
+    for water in water_areas:
+        if check_collision(player, water):
             slow_timer = 120
 
     if slow_timer > 0:
         slow_timer -= 1
 
-    # =====================
-    # PRINCESE (AI + LĒCIENS)
-    # =====================
-    if keys["w"] and princess_on_ground:
-        princess_vy = princess_jump
-        princess_on_ground = False
+    # =========================
+    # PRINCESES AI
+    # =========================
+    princess_velocity_y += gravity
+    canvas.move(princess, 0, princess_velocity_y)
 
-    princess_vy += princess_gravity
-    canvas.move(princess, 0, princess_vy)
-
-    px1, py1, px2, py2 = canvas.coords(princess)
+    princess_x1, princess_y1, princess_x2, princess_y2 = canvas.coords(princess)
     princess_on_ground = False
 
-    for p in platform_rects:
-        x1, y1, x2, y2 = canvas.coords(p)
-        if collide(princess, p):
-            if princess_vy >= 0:
-                canvas.coords(princess, px1, y1 - 50, px2, y1)
-                princess_vy = 0
+    for platform in platforms:
+        plat_x1, plat_y1, plat_x2, plat_y2 = canvas.coords(platform)
+
+        if check_collision(princess, platform):
+            princess_x1, princess_y1, princess_x2, princess_y2 = canvas.coords(princess)
+
+            if princess_velocity_y > 0 and princess_y2 > plat_y1 and princess_y1 < plat_y1:
+                canvas.coords(
+                    princess,
+                    princess_x1,
+                    plat_y1 - 50,
+                    princess_x2,
+                    plat_y1
+                )
+                princess_velocity_y = 0
                 princess_on_ground = True
 
-    # kustas uz finišu
-    f1, f2, f3, f4 = canvas.coords(finish)
-    if px1 < f1:
-        canvas.move(princess, 1.5, 0)
+    # Kustība uz finišu
+    finish_x1, finish_y1, finish_x2, finish_y2 = canvas.coords(finish)
 
-    # =====================
+    if princess_x1 < finish_x1:
+        canvas.move(princess, princess_speed, 0)
+
+    # Princese lec, ja priekšā ir platforma
+    for platform in platforms:
+        plat_x1, plat_y1, plat_x2, plat_y2 = canvas.coords(platform)
+
+        if (
+            princess_x2 + 20 > plat_x1
+            and princess_x1 < plat_x1
+            and plat_y1 < princess_y2
+            and plat_y1 > princess_y1 - 120
+            and princess_on_ground
+        ):
+            princess_velocity_y = princess_jump
+            princess_on_ground = False
+
+    # Ja princese nokrīt zem mapes
+    if princess_y2 > 768:
+        canvas.coords(princess, 120, 640, 160, 690)
+        princess_velocity_y = 0
+
+    # Robežas princesei
+    princess_x1, princess_y1, princess_x2, princess_y2 = canvas.coords(princess)
+
+    if princess_x1 < 0:
+        canvas.move(princess, -princess_x1, 0)
+
+    if princess_x2 > 1366:
+        canvas.move(princess, 1366 - princess_x2, 0)
+
+    # =========================
     # WIN / LOSE
-    # =====================
-    if collide(player, princess):
-        canvas.create_text(683, 300, text="TU UZVARĒJI!", fill="white", font=("Arial", 40))
+    # =========================
+    if check_collision(player, princess):
+        canvas.create_text(
+            683, 300,
+            text="TU UZVARĒJI!",
+            fill="white",
+            font=("Arial", 40, "bold")
+        )
         return
 
-    if collide(princess, finish):
-        canvas.create_text(683, 300, text="TU ZAUDĒJI!", fill="white", font=("Arial", 40))
+    if check_collision(princess, finish):
+        canvas.create_text(
+            683, 300,
+            text="TU ZAUDĒJI!",
+            fill="white",
+            font=("Arial", 40, "bold")
+        )
         return
+
+    # =========================
+    # UI
+    # =========================
+    canvas.delete("ui")
+
+    canvas.create_text(
+        250, 30,
+        text="LEFT / RIGHT = kustība | SPACE = lēciens",
+        fill="white",
+        font=("Arial", 16),
+        tags="ui"
+    )
+
+    if slow_timer > 0:
+        canvas.create_text(
+            260, 60,
+            text="Tu esi palēnināts, jo iekriti ūdenī!",
+            fill="red",
+            font=("Arial", 16),
+            tags="ui"
+        )
 
     root.after(20, game_loop)
 
