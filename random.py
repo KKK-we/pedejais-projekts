@@ -180,9 +180,9 @@ def load_level(index):
     global platforms, water_areas, lava_areas
     global player, princess, finish
     global princess_speed
-    global player_velocity_y, player_on_ground, slow_timer
-    global princess_velocity_y, princess_on_ground
-    global game_won, game_lost
+    global player_velocity_y, princess_velocity_y
+    global player_on_ground, princess_on_ground
+    global slow_timer, game_won, game_lost
 
     canvas.delete("all")
 
@@ -194,8 +194,8 @@ def load_level(index):
     game_lost = False
 
     player_velocity_y = 0
-    player_on_ground = False
     princess_velocity_y = 0
+    player_on_ground = False
     princess_on_ground = False
     slow_timer = 0
 
@@ -261,6 +261,12 @@ def next_level():
 
     load_level(current_level)
 
+def princess_touching_lava():
+    for lava in lava_areas:
+        if check_collision(princess, lava):
+            return True
+    return False
+
 def game_loop():
     global player_velocity_y, player_on_ground
     global princess_velocity_y, princess_on_ground
@@ -282,7 +288,6 @@ def game_loop():
 
         px1, py1, px2, py2 = canvas.coords(player)
 
-        # Borders left/right
         if px1 < 0:
             canvas.move(player, -px1, 0)
 
@@ -291,7 +296,6 @@ def game_loop():
 
         for platform in platforms:
             if check_collision(player, platform):
-                px1, py1, px2, py2 = canvas.coords(player)
                 bx1, by1, bx2, by2 = canvas.coords(platform)
 
                 if move_x > 0:
@@ -335,7 +339,6 @@ def game_loop():
             if check_collision(player, lava):
                 game_lost = True
 
-        # Princess movement
         princess_velocity_y += gravity
         canvas.move(princess, 0, princess_velocity_y)
 
@@ -351,24 +354,58 @@ def game_loop():
                     princess_velocity_y = 0
                     princess_on_ground = True
 
+                elif princess_velocity_y < 0 and pry1 < by2 and pry2 > by2:
+                    canvas.coords(princess, prx1, by2, prx2, by2 + 50)
+                    princess_velocity_y = 2
+
         px1, py1, px2, py2 = canvas.coords(player)
+        fx1, fy1, fx2, fy2 = canvas.coords(finish)
 
-        if abs(prx1 - px1) < 120:
+        princess_move = princess_speed
+
+        if abs(prx1 - px1) < 140:
             if prx1 > px1:
-                canvas.move(princess, princess_speed + 2, 0)
+                princess_move = princess_speed + 2
             else:
-                canvas.move(princess, -2, 0)
+                princess_move = -(princess_speed + 1)
         else:
-            fx1, fy1, fx2, fy2 = canvas.coords(finish)
-
             if prx1 < fx1:
-                canvas.move(princess, princess_speed, 0)
+                princess_move = princess_speed
+            else:
+                princess_move = -1
 
+        canvas.move(princess, princess_move, 0)
+
+        prx1, pry1, prx2, pry2 = canvas.coords(princess)
+
+        if prx1 < 0:
+            canvas.move(princess, -prx1, 0)
+
+        if prx2 > 1366:
+            canvas.move(princess, 1366 - prx2, 0)
+
+        # Princess avoids lava
+        for lava in lava_areas:
+            lx1, ly1, lx2, ly2 = canvas.coords(lava)
+
+            if (
+                prx2 + 20 > lx1
+                and prx1 < lx1
+                and abs(pry2 - ly1) < 80
+            ):
+                if princess_on_ground:
+                    princess_velocity_y = princess_jump
+
+            if check_collision(princess, lava):
+                canvas.move(princess, -40, -20)
+                princess_velocity_y = princess_jump
+
+        # Princess jumps on platforms
         for platform in platforms:
             bx1, by1, bx2, by2 = canvas.coords(platform)
 
             if (
-                prx2 + 30 > bx1
+                prx2 + 25 > bx1
                 and prx1 < bx1
                 and by1 < pry2
                 and by1 > pry1 - 140
@@ -376,15 +413,6 @@ def game_loop():
             ):
                 princess_velocity_y = princess_jump
                 princess_on_ground = False
-
-        prx1, pry1, prx2, pry2 = canvas.coords(princess)
-
-        # Princess borders
-        if prx1 < 0:
-            canvas.move(princess, -prx1, 0)
-
-        if prx2 > 1366:
-            canvas.move(princess, 1366 - prx2, 0)
 
         if check_collision(princess, finish):
             game_lost = True
