@@ -1,494 +1,257 @@
 import tkinter as tk
 
+# =====================
+# WINDOW
+# =====================
 root = tk.Tk()
 root.title("Princess and the Black Man")
-root.geometry("1366x768")
-root.resizable(False, False)
+root.geometry("800x500")
 
-canvas = tk.Canvas(root, width=1366, height=768, bg="#1f1f1f")
+canvas = tk.Canvas(root, width=800, height=500, bg="black")
 canvas.pack()
 
-current_level = 0
-game_won = False
-game_lost = False
-
-# ================= MAPES (Fireboy stilā) =================
-levels = [
-
-# ===== LEVEL 1 =====
-{
-    "spawn_player": (50, 650, 90, 700),
-    "spawn_princess": (120, 650, 160, 700),
-
-    "platforms": [
-        (0,700,1366,768),
-
-        # apakša
-        (0,600,400,630),
-        (450,600,900,630),
-        (950,600,1366,630),
-
-        # vidus
-        (200,480,600,510),
-        (700,480,1100,510),
-
-        # augša
-        (100,350,400,380),
-        (500,350,900,380),
-        (1000,350,1300,380),
-
-        # finiša platforma
-        (1100,200,1350,230)
-    ],
-
-    "waters":[
-        (250,470,350,480),
-        (750,470,850,480)
-    ],
-
-    "lavas":[
-        (500,690,700,700)
-    ],
-
-    "finish":(1200,150,1300,200),
-    "princess_speed":4
-},
-
-# ===== LEVEL 2 =====
-{
-    "spawn_player": (50, 650, 90, 700),
-    "spawn_princess": (120, 650, 160, 700),
-
-    "platforms":[
-        (0,700,1366,768),
-
-        (0,620,200,650),
-        (250,580,450,610),
-        (500,540,700,570),
-        (750,500,950,530),
-        (1000,460,1200,490),
-
-        (300,420,600,450),
-        (700,380,1000,410),
-
-        (200,300,400,330),
-        (500,260,700,290),
-        (800,220,1000,250),
-
-        (1100,150,1300,180)
-    ],
-
-    "waters":[
-        (520,530,680,540),
-        (820,370,950,380)
-    ],
-
-    "lavas":[
-        (300,690,600,700),
-        (900,690,1200,700)
-    ],
-
-    "finish":(1150,100,1250,140),
-    "princess_speed":5
-},
-
-# ===== LEVEL 3 (GRŪTS) =====
-{
-    "spawn_player": (50, 650, 90, 700),
-    "spawn_princess": (120, 650, 160, 700),
-
-    "platforms":[
-        (0,700,1366,768),
-
-        # apakša
-        (0,630,300,660),
-        (350,630,700,660),
-        (750,630,1100,660),
-        (1150,630,1366,660),
-
-        # šauri lēcieni
-        (200,520,260,550),
-        (350,480,420,510),
-        (500,440,570,470),
-        (650,400,720,430),
-        (800,360,870,390),
-        (950,320,1020,350),
-
-        # augšējā daļa
-        (200,250,500,280),
-        (600,200,900,230),
-        (1000,160,1300,190)
-    ],
-
-    "waters":[
-        (210,510,250,520),
-        (660,390,710,400),
-        (960,310,1010,320)
-    ],
-
-    "lavas":[
-        (350,690,700,700),
-        (750,690,1100,700)
-    ],
-
-    "finish":(1150,100,1300,140),
-    "princess_speed":6
-}
-]
-
-
-platforms = []
-water_areas = []
-lava_areas = []
-
+# =====================
+# GLOBALS
+# =====================
 player = None
 princess = None
 finish = None
 
-player_speed = 7
-slow_speed = 1
+platforms = []
+
 gravity = 1
-player_jump = -18
-player_velocity_y = 0
-player_on_ground = False
-slow_timer = 0
 
-princess_speed = 4
-princess_jump = -16
-princess_velocity_y = 0
-princess_on_ground = False
+p_vel = 0
+p_on_ground = False
 
-left_pressed = False
-right_pressed = False
-space_pressed = False
+ai_vel = 0
+ai_on_ground = False
 
-def key_press(event):
-    global left_pressed, right_pressed, space_pressed
+level_index = 0
 
-    if event.keysym == "Left":
-        left_pressed = True
+left = right = jump = False
 
-    if event.keysym == "Right":
-        right_pressed = True
+# =====================
+# LEVELS
+# =====================
+levels = [
 
-    if event.keysym == "space":
-        space_pressed = True
+# ===== LEVEL 1 =====
+{
+"player":(50,400,80,430),
+"princess":(300,400,330,430),
+"finish":(700,200,760,260),
 
-    if game_won and event.keysym == "Return":
-        next_level()
+"platforms":[
+(0,450,800,500),
+(0,0,10,500),(790,0,800,500),
 
-def key_release(event):
-    global left_pressed, right_pressed, space_pressed
+(150,380,300,400),
+(350,330,500,350),
+(550,280,700,300)
+]
+},
 
-    if event.keysym == "Left":
-        left_pressed = False
+# ===== LEVEL 2 =====
+{
+"player":(50,400,80,430),
+"princess":(350,400,380,430),
+"finish":(700,150,760,210),
 
-    if event.keysym == "Right":
-        right_pressed = False
+"platforms":[
+(0,450,800,500),
+(0,0,10,500),(790,0,800,500),
 
-    if event.keysym == "space":
-        space_pressed = False
+(100,380,200,400),
+(250,340,350,360),
+(400,300,500,320),
+(550,260,650,280),
+(700,220,780,240)
+]
+},
+
+# ===== LEVEL 3 =====
+{
+"player":(50,400,80,430),
+"princess":(400,400,430,430),
+"finish":(700,100,760,160),
+
+"platforms":[
+(0,450,800,500),
+(0,0,10,500),(790,0,800,500),
+
+(150,380,200,400),
+(250,330,300,350),
+(350,280,400,300),
+(450,230,500,250),
+(550,180,600,200),
+(650,130,700,150)
+]
+}
+]
+
+# =====================
+# INPUT
+# =====================
+def key_press(e):
+    global left, right, jump
+    if e.keysym == "Left": left = True
+    if e.keysym == "Right": right = True
+    if e.keysym == "space": jump = True
+
+def key_release(e):
+    global left, right, jump
+    if e.keysym == "Left": left = False
+    if e.keysym == "Right": right = False
+    if e.keysym == "space": jump = False
 
 root.bind("<KeyPress>", key_press)
 root.bind("<KeyRelease>", key_release)
 
-def check_collision(obj1, obj2):
-    x1, y1, x2, y2 = canvas.coords(obj1)
-    a1, b1, a2, b2 = canvas.coords(obj2)
+# =====================
+# COLLISION
+# =====================
+def hit(a, b):
+    x1,y1,x2,y2 = canvas.coords(a)
+    a1,b1,a2,b2 = canvas.coords(b)
+    return x1<a2 and x2>a1 and y1<b2 and y2>b1
 
-    return x1 < a2 and x2 > a1 and y1 < b2 and y2 > b1
-
-def load_level(index):
-    global platforms, water_areas, lava_areas
-    global player, princess, finish
-    global princess_speed
-    global player_velocity_y, princess_velocity_y
-    global player_on_ground, princess_on_ground
-    global slow_timer, game_won, game_lost
+# =====================
+# LOAD LEVEL
+# =====================
+def load_level(i):
+    global player, princess, finish, platforms
+    global p_vel, ai_vel
 
     canvas.delete("all")
+    platforms.clear()
 
-    platforms = []
-    water_areas = []
-    lava_areas = []
+    lvl = levels[i]
 
-    game_won = False
-    game_lost = False
+    for p in lvl["platforms"]:
+        platforms.append(canvas.create_rectangle(*p, fill="#8c7b4f"))
 
-    player_velocity_y = 0
-    princess_velocity_y = 0
-    player_on_ground = False
-    princess_on_ground = False
-    slow_timer = 0
+    finish = canvas.create_rectangle(*lvl["finish"], fill="gold")
 
-    level = levels[index]
+    player = canvas.create_rectangle(*lvl["player"], fill="#3b2f2f")
+    princess = canvas.create_rectangle(*lvl["princess"], fill="pink")
 
-    for p in level["platforms"]:
-        platforms.append(
-            canvas.create_rectangle(
-                p[0], p[1], p[2], p[3],
-                fill="#8c7b4f",
-                outline="black",
-                width=2
-            )
-        )
+    p_vel = 0
+    ai_vel = 0
 
-    for w in level["waters"]:
-        water_areas.append(
-            canvas.create_rectangle(
-                w[0], w[1], w[2], w[3],
-                fill="deepskyblue",
-                outline="blue",
-                width=2
-            )
-        )
+# =====================
+# PRINCESS AI (uzlabots)
+# =====================
+def princess_ai():
+    global ai_vel, ai_on_ground
 
-    for l in level["lavas"]:
-        lava_areas.append(
-            canvas.create_rectangle(
-                l[0], l[1], l[2], l[3],
-                fill="red",
-                outline="darkred",
-                width=2
-            )
-        )
+    prx1, pry1, prx2, pry2 = canvas.coords(princess)
+    px1, _, _, _ = canvas.coords(player)
+    fx1, _, _, _ = canvas.coords(finish)
 
-    f = level["finish"]
-    finish = canvas.create_rectangle(
-        f[0], f[1], f[2], f[3],
-        fill="gold",
-        outline="yellow",
-        width=3
-    )
+    dist_player = abs(prx1 - px1)
 
-    player = canvas.create_rectangle(50, 640, 90, 690, fill="black")
-    princess = canvas.create_rectangle(120, 640, 160, 690, fill="pink")
+    # ===== STRATEGY =====
+    if dist_player < 90:
+        move = 5 if prx1 > px1 else -5   # bēg no spēlētāja
+    else:
+        move = 3 if prx1 < fx1 else -3   # iet uz finišu
 
-    princess_speed = level["princess_speed"]
+    # ===== WALL DETECT + JUMP =====
+    for p in platforms:
+        x1,y1,x2,y2 = canvas.coords(p)
 
-def next_level():
-    global current_level
+        if (
+            prx2 + 5 > x1 and prx1 < x1
+            and pry2 > y1 - 20 and pry2 < y1 + 20
+        ):
+            if ai_on_ground:
+                ai_vel = -15
 
-    current_level += 1
+    # ===== SAFE CHECK =====
+    safe = False
+    for p in platforms:
+        x1,y1,x2,y2 = canvas.coords(p)
 
-    if current_level >= len(levels):
-        canvas.delete("all")
-        canvas.create_text(
-            683, 300,
-            text="TU PABEIDZI VISUS LĪMEŅUS!",
-            fill="white",
-            font=("Arial", 40, "bold")
-        )
-        return
+        if (
+            prx1 + move > x1 and prx2 + move < x2
+            and abs(pry2 - y1) < 5
+        ):
+            safe = True
 
-    load_level(current_level)
+    if not safe:
+        move = 0
 
-def princess_touching_lava():
-    for lava in lava_areas:
-        if check_collision(princess, lava):
-            return True
-    return False
+    return move
 
+# =====================
+# GAME LOOP
+# =====================
 def game_loop():
-    global player_velocity_y, player_on_ground
-    global princess_velocity_y, princess_on_ground
-    global slow_timer, game_won, game_lost
+    global p_vel, p_on_ground
+    global ai_vel, ai_on_ground
+    global level_index
 
-    if not game_won and not game_lost:
+    # ===== PLAYER =====
+    dx = 0
+    if left: dx -= 5
+    if right: dx += 5
 
-        current_speed = slow_speed if slow_timer > 0 else player_speed
+    canvas.move(player, dx, 0)
 
-        move_x = 0
+    if jump and p_on_ground:
+        p_vel = -15
 
-        if left_pressed:
-            move_x -= current_speed
+    p_vel += gravity
+    canvas.move(player, 0, p_vel)
 
-        if right_pressed:
-            move_x += current_speed
+    px1, py1, px2, py2 = canvas.coords(player)
+    p_on_ground = False
 
-        canvas.move(player, move_x, 0)
+    for p in platforms:
+        if hit(player, p):
+            x1,y1,x2,y2 = canvas.coords(p)
+            if p_vel > 0:
+                canvas.coords(player, px1, y1-30, px2, y1)
+                p_vel = 0
+                p_on_ground = True
 
-        px1, py1, px2, py2 = canvas.coords(player)
+    # ===== PRINCESS =====
+    ai_vel += gravity
+    canvas.move(princess, 0, ai_vel)
 
-        if px1 < 0:
-            canvas.move(player, -px1, 0)
+    prx1, pry1, prx2, pry2 = canvas.coords(princess)
+    ai_on_ground = False
 
-        if px2 > 1366:
-            canvas.move(player, 1366 - px2, 0)
+    for p in platforms:
+        if hit(princess, p):
+            x1,y1,x2,y2 = canvas.coords(p)
+            if ai_vel > 0:
+                canvas.coords(princess, prx1, y1-30, prx2, y1)
+                ai_vel = 0
+                ai_on_ground = True
 
-        for platform in platforms:
-            if check_collision(player, platform):
-                bx1, by1, bx2, by2 = canvas.coords(platform)
+    move = princess_ai()
+    canvas.move(princess, move, 0)
 
-                if move_x > 0:
-                    canvas.coords(player, bx1 - 40, py1, bx1, py2)
+    # ===== WIN (FIXED COLLISION) =====
+    if hit(player, princess):
+        level_index += 1
+        if level_index >= len(levels):
+            canvas.create_text(400,200,text="TU VINNĒJI VISU!",fill="white",font=("Arial",25))
+            return
+        load_level(level_index)
 
-                if move_x < 0:
-                    canvas.coords(player, bx2, py1, bx2 + 40, py2)
-
-        if space_pressed and player_on_ground:
-            player_velocity_y = player_jump
-            player_on_ground = False
-
-        player_velocity_y += gravity
-        canvas.move(player, 0, player_velocity_y)
-
-        px1, py1, px2, py2 = canvas.coords(player)
-        player_on_ground = False
-
-        for platform in platforms:
-            bx1, by1, bx2, by2 = canvas.coords(platform)
-
-            if check_collision(player, platform):
-
-                if player_velocity_y > 0 and py2 > by1 and py1 < by1:
-                    canvas.coords(player, px1, by1 - 50, px2, by1)
-                    player_velocity_y = 0
-                    player_on_ground = True
-
-                elif player_velocity_y < 0 and py1 < by2 and py2 > by2:
-                    canvas.coords(player, px1, by2, px2, by2 + 50)
-                    player_velocity_y = 3
-
-        for water in water_areas:
-            if check_collision(player, water):
-                slow_timer = 300
-
-        if slow_timer > 0:
-            slow_timer -= 1
-
-        for lava in lava_areas:
-            if check_collision(player, lava):
-                game_lost = True
-
-        princess_velocity_y += gravity
-        canvas.move(princess, 0, princess_velocity_y)
-
-        prx1, pry1, prx2, pry2 = canvas.coords(princess)
-        princess_on_ground = False
-
-        for platform in platforms:
-            bx1, by1, bx2, by2 = canvas.coords(platform)
-
-            if check_collision(princess, platform):
-                if princess_velocity_y > 0 and pry2 > by1 and pry1 < by1:
-                    canvas.coords(princess, prx1, by1 - 50, prx2, by1)
-                    princess_velocity_y = 0
-                    princess_on_ground = True
-
-                elif princess_velocity_y < 0 and pry1 < by2 and pry2 > by2:
-                    canvas.coords(princess, prx1, by2, prx2, by2 + 50)
-                    princess_velocity_y = 2
-
-        px1, py1, px2, py2 = canvas.coords(player)
-        fx1, fy1, fx2, fy2 = canvas.coords(finish)
-
-        princess_move = princess_speed
-
-        if abs(prx1 - px1) < 140:
-            if prx1 > px1:
-                princess_move = princess_speed + 2
-            else:
-                princess_move = -(princess_speed + 1)
-        else:
-            if prx1 < fx1:
-                princess_move = princess_speed
-            else:
-                princess_move = -1
-
-        canvas.move(princess, princess_move, 0)
-
-        prx1, pry1, prx2, pry2 = canvas.coords(princess)
-
-        if prx1 < 0:
-            canvas.move(princess, -prx1, 0)
-
-        if prx2 > 1366:
-            canvas.move(princess, 1366 - prx2, 0)
-
-        # Princess avoids lava
-        for lava in lava_areas:
-            lx1, ly1, lx2, ly2 = canvas.coords(lava)
-
-            if (
-                prx2 + 20 > lx1
-                and prx1 < lx1
-                and abs(pry2 - ly1) < 80
-            ):
-                if princess_on_ground:
-                    princess_velocity_y = princess_jump
-
-            if check_collision(princess, lava):
-                canvas.move(princess, -40, -20)
-                princess_velocity_y = princess_jump
-
-        # Princess jumps on platforms
-        for platform in platforms:
-            bx1, by1, bx2, by2 = canvas.coords(platform)
-
-            if (
-                prx2 + 25 > bx1
-                and prx1 < bx1
-                and by1 < pry2
-                and by1 > pry1 - 140
-                and princess_on_ground
-            ):
-                princess_velocity_y = princess_jump
-                princess_on_ground = False
-
-        if check_collision(princess, finish):
-            game_lost = True
-
-        if abs(prx1 - px1) < 35 and abs(pry1 - py1) < 35:
-            game_won = True
-
-    canvas.delete("ui")
-
-    canvas.create_text(
-        250, 30,
-        text=f"Līmenis {current_level + 1} | LEFT / RIGHT | SPACE",
-        fill="white",
-        font=("Arial", 16),
-        tags="ui"
-    )
-
-    if slow_timer > 0:
-        canvas.create_text(
-            330, 60,
-            text="Ūdens tevi palēnina uz 5 sekundēm!",
-            fill="deepskyblue",
-            font=("Arial", 16),
-            tags="ui"
-        )
-
-    if game_won:
-        canvas.create_text(
-            683, 300,
-            text="TU NOĶĒRI PRINCESI!",
-            fill="white",
-            font=("Arial", 35, "bold"),
-            tags="ui"
-        )
-
-        canvas.create_text(
-            683, 350,
-            text="Nospied ENTER nākamajam līmenim",
-            fill="yellow",
-            font=("Arial", 20),
-            tags="ui"
-        )
-
-    if game_lost:
-        canvas.create_text(
-            683, 300,
-            text="TU ZAUDĒJI!",
-            fill="red",
-            font=("Arial", 40, "bold"),
-            tags="ui"
-        )
+    # ===== LOSE =====
+    if hit(princess, finish):
+        canvas.create_text(400,200,text="PRINCESE AIZBĒGA!",fill="red",font=("Arial",25))
+        return
 
     root.after(20, game_loop)
 
-load_level(current_level)
+# =====================
+# START
+# =====================
+load_level(level_index)
 game_loop()
 root.mainloop()
